@@ -14,9 +14,12 @@
 
 using namespace std;
 
+void printRouterNamesArray(const short rNames[], const short numRouters);
+void printAllRT(const vector<router>&);
+
 int main(int argc, const char * argv[]) {
     
-    vector<router> r;
+    vector<router> rObject;
     
     short maxLineLength = 32;                                               //Hardcoded line length!!!
     char topologyLine[maxLineLength];
@@ -33,49 +36,40 @@ int main(int argc, const char * argv[]) {
         //Open topology file
         ifstream in_file;
         in_file.open(argv[1]);
-        
-        cout << "1\n";
-        
+
         if (in_file.is_open()) {
-            
-            cout << "2\n";
-            
             //scan file for number of router objects to make
             while (!in_file.eof()) {
-                
-                cout << "3\n";
-                
                 newRouter = true;
                 in_file.getline(topologyLine, maxLineLength);
                 for (int i = 0; i < 5; ++i)
                 {
-                    
-                    cout << "4\n";
-                    
                     if (topologyLine[0] == routerNames[i]) {
                         //If the first input number is a routerName...
                         //Give to object of correct name
+                        src = strtok(topologyLine, "\t");
+                        dest = strtok(NULL, "\t");
+                        cost = strtok(NULL, "\t");
+                        delay = strtok(NULL, "\t");
+                        
+                        rObject[i].updateRT(*dest, *cost, *dest);
                         newRouter = false;
                     }
-                    
                 }
                 
                 if (newRouter == true)
                 {
-                    
-                    cout << "5\n";
-                    
                     src = strtok(topologyLine, "\t");
                     dest = strtok(NULL, "\t");
                     cost = strtok(NULL, "\t");
                     delay = strtok(NULL, "\t");
                     
                     //If it's a new router, create a new object
-                    router r(char& src, char& dest, char& cost, char& delay);
+                    router r(*src, *dest, *cost, *delay);
+                    rObject.push_back(r);
                     
+                    routerNames[numOfRouters] = *src;
                     ++numOfRouters;
-                    
-                    cout << "6\n";
                 }
                 
             }
@@ -93,10 +87,33 @@ int main(int argc, const char * argv[]) {
         return 0;
     }
     
+    printRouterNamesArray(routerNames, numOfRouters);
     
-    for (int time = 0; time < 10; ++time)
-    {
-        
-    }
+    printAllRT(rObject);
+    
     return 0;
 }
+
+void printRouterNamesArray(const short rNames[], const short numRouters)
+{
+    cout << "Total routers = " << numRouters << "\n";
+    cout << "routerNames array: { ";
+    for (int i = 0; i < numRouters; ++i) {
+        cout << rNames[i] << ", ";
+    }
+    cout << "}\n";
+}
+
+void printAllRT(const vector<router>& r)
+{
+    unsigned long size = r.size();
+    
+    for (unsigned int i = 0; i < size; ++i) {
+        r[i].printRT();
+    }
+}
+
+
+
+
+

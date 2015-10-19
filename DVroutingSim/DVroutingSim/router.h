@@ -16,12 +16,10 @@ class router
 public:
     router(char& src, char& dest, char& cost, char& delay);
     ~router();
-    void updateRT(short dest, short cost, short nextHop);
-    void setDestination(char dest);
-    void setCost(char cost);
-    void setNextHop(char nextHop);
+    void updateRT(char& dest, char& cost, char& nextHop);
+    void printRT() const;
     void setLink(char linkData);
-    char getRouterName();
+    short getRouterName() const;
     //events
     void processDVPacket();
     void forwardDataPacket();
@@ -36,12 +34,12 @@ private:
         
     };
     //Routing table variables                                           How many slots should be reserved for routing table?
-    short destination[50];
-    short cost[50];
-    short nextHop[50];
+    char destination[50];
+    char cost[50];
+    char nextHop[50];
     short RTSize;
     //Router Attributes
-    char routerName;
+    short routerName;
 };
 
 #endif /* defined(__DVroutingSim__router__) */
