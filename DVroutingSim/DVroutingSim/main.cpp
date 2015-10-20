@@ -14,6 +14,7 @@
 
 using namespace std;
 
+void commandLineInterface(vector<router>&, int argc, const char * argv[]);
 void printRouterNamesArray(const short rNames[], const short numRouters);
 void printAllRT(const vector<router>&);
 
@@ -39,9 +40,12 @@ int main(int argc, const char * argv[]) {
 
         if (in_file.is_open()) {
             //scan file for number of router objects to make
+            in_file.getline(topologyLine, maxLineLength);
             while (!in_file.eof()) {
                 newRouter = true;
-                in_file.getline(topologyLine, maxLineLength);
+                
+                cout << "TopologyLine: " << topologyLine << endl;
+                
                 for (int i = 0; i < 5; ++i)
                 {
                     if (topologyLine[0] == routerNames[i]) {
@@ -54,11 +58,17 @@ int main(int argc, const char * argv[]) {
                         
                         rObject[i].updateRT(*dest, *cost, *dest);
                         newRouter = false;
+                        
+                        cout << "Inside update if condition...\n";
                     }
+                    cout << "Inside for loop i = " << i << endl;
                 }
+                cout << "Outside for loop...\n";
                 
                 if (newRouter == true)
                 {
+                    cout << "Inside new router if statement...\n";
+                    
                     src = strtok(topologyLine, "\t");
                     dest = strtok(NULL, "\t");
                     cost = strtok(NULL, "\t");
@@ -72,7 +82,12 @@ int main(int argc, const char * argv[]) {
                     ++numOfRouters;
                 }
                 
+                cout<< "After if statement...\n";
+                
+                in_file.getline(topologyLine, maxLineLength);
+                
             }
+            cout << "Outside while loop...\n";
         }
         else {
             cout << "topology file did not open correctly.\n";
@@ -87,6 +102,8 @@ int main(int argc, const char * argv[]) {
         return 0;
     }
     
+    cout << "Before functions...\n";
+    
     printRouterNamesArray(routerNames, numOfRouters);
     
     printAllRT(rObject);
@@ -94,8 +111,15 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 
+void commandLineInterface(vector<router>&, int argc, const char * argv[])
+{
+    
+}
+
 void printRouterNamesArray(const short rNames[], const short numRouters)
 {
+    cout << "Inside printArray function...\n";
+    
     cout << "Total routers = " << numRouters << "\n";
     cout << "routerNames array: { ";
     for (int i = 0; i < numRouters; ++i) {

@@ -10,6 +10,7 @@
 #define __DVroutingSim__router__
 
 #include <stdio.h>
+#include <string>
 
 class router
 {
@@ -19,7 +20,7 @@ public:
     void updateRT(char& dest, char& cost, char& nextHop);
     void printRT() const;
     void setLink(char linkData);
-    short getRouterName() const;
+    std::string getRouterName() const;
     //events
     void processDVPacket();
     void forwardDataPacket();
@@ -34,12 +35,17 @@ private:
         
     };
     //Routing table variables                                           How many slots should be reserved for routing table?
-    char destination[50];
-    char cost[50];
-    char nextHop[50];
+    std::string destination[50];
+    std::string cost[50];
+    std::string nextHop[50];
     short RTSize;
     //Router Attributes
-    short routerName;
+    std::string routerName;
+    //Update Routing Table temps
+    char srcRT[7];
+    char destRT[7];
+    char costRT[7];
+    char delayRT[15];
 };
 
 #endif /* defined(__DVroutingSim__router__) */

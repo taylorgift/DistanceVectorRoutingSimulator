@@ -8,6 +8,7 @@
 
 #include "router.h"
 #include <iostream>
+#include <cstring>
 
 using namespace std;
 
@@ -17,9 +18,15 @@ router::router(char& src, char& dest, char& cost, char& delay) : RTSize(0) {
     cout << "CONSTRUCTOR Cost: " << &cost << endl;
     cout << "CONSTRUCTOR Delay: " << &delay << endl;
     
-    routerName = src;
+    strcpy(srcRT, &src);
+    strcpy(destRT, &dest);
+    strcpy(costRT, &cost);
+    strcpy(delayRT, &delay);
     
-    updateRT(dest, cost, dest);
+    cout << "strcpy complete...\n";
+    
+    routerName = srcRT;
+    updateRT(*destRT, *costRT, *destRT);
 }
 
 router::~router() {
@@ -28,9 +35,14 @@ router::~router() {
 
 void router::updateRT(char& newDest, char& newCost, char& newNextHop)
 {
-    destination[RTSize] = newDest;
-    cost[RTSize] = newCost;
-    nextHop[RTSize] = newNextHop;
+    cout << "MADE IT\n";
+    cout << "updateRT newDest: " << &newDest << endl;
+    cout << "updateRT newCost: " << &newCost << endl;
+    cout << "updateRT newNextHop: " << &newNextHop << endl;
+    
+    destination[RTSize] = &newDest;
+    cost[RTSize] = &newCost;
+    nextHop[RTSize] = &newNextHop;
     ++RTSize;
 }
 
@@ -51,7 +63,7 @@ void router::setLink(char linkData)
     
 }
 
-short router::getRouterName() const
+std::string router::getRouterName() const
 {
     return routerName;
 }
