@@ -48,7 +48,7 @@ void router::updateRT(char& newDest, char& newCost, char& newNextHop)
 
 void router::printRT() const
 {
-    cout << "\t\t\t\t" << routerName << "'s Routing Table\n";
+    cout << "\t\t\t\t" << getRouterName() << "'s Routing Table\n";
     cout << "Destination\t\t\tCost\t\t\tNextHop\n";
     
     for (int i = 0; i < RTSize; ++i)

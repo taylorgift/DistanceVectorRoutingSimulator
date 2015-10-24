@@ -41,6 +41,11 @@ private:
     short RTSize;
     //Router Attributes
     std::string routerName;
+    
+    /*
+     *  Neighbor information!!!
+     */
+    
     //Update Routing Table temps
     char srcRT[7];
     char destRT[7];

@@ -14,38 +14,69 @@
 
 using namespace std;
 
-void commandLineInterface(vector<router>&, int argc, const char * argv[]);
+/*  Priority Queue
+ *  Make the priority queue a linked list with time as the priority.
+ *  Each entry of the linked list needs...
+ *  time (float): the priority
+ *  event: so it knows what to do in this situation
+ *  pointers: ??? To send data to neighbors?
+ */
+
+/*  Router Assumption
+ *  You can assume router names start from 0 -> n
+ */
+
+void commandLineInterface(vector<router>&, int argc, const char * argv[], short& numOfRouters, short routerNames[], double& time);
 void printRouterNamesArray(const short rNames[], const short numRouters);
 void printAllRT(const vector<router>&);
+//Events
+void processDVPacket(vector<router>&, short numOfRouters, short routerNames[]);     //numOfRouters passed by val or ref???
 
 int main(int argc, const char * argv[]) {
     
     vector<router> rObject;
     
+    short numOfRouters = 0;
+    short routerNames[5] = {-1, -1, -1, -1, -1};                            //Hardcoded number of routers for topology1!!!
+    double simulationTime = 0;
+    double currentTime = 0;
+    
+    cout << "Pre commandLineInterface, simulationTime = " << simulationTime << endl;
+    
+    commandLineInterface(rObject, argc, argv, numOfRouters, routerNames, simulationTime);
+    
+    cout << "Post commandLineInterface, simulationTime = " << simulationTime << endl;
+    
+    printRouterNamesArray(routerNames, numOfRouters);
+    
+    printAllRT(rObject);
+    
+    return 0;
+}
+
+void commandLineInterface(vector<router>& rObject, int argc, const char * argv[], short& numOfRouters, short routerNames[], double& time)
+{
     short maxLineLength = 32;                                               //Hardcoded line length!!!
     char topologyLine[maxLineLength];
     char* src;
     char* dest;
     char* cost;
     char* delay;
-    short numOfRouters = 0;
-    short routerNames[5] = {-1, -1, -1, -1, -1};                            //Hardcoded number of routers for topology1!!!
     bool newRouter = true;
     
     //checking proper command line entries...
     if (argc == 3) {
+        //Set simulation time
+        time = atof(argv[2]);
         //Open topology file
         ifstream in_file;
         in_file.open(argv[1]);
-
+        
         if (in_file.is_open()) {
             //scan file for number of router objects to make
             in_file.getline(topologyLine, maxLineLength);
             while (!in_file.eof()) {
                 newRouter = true;
-                
-                cout << "TopologyLine: " << topologyLine << endl;
-                
                 for (int i = 0; i < 5; ++i)
                 {
                     if (topologyLine[0] == routerNames[i]) {
@@ -58,17 +89,10 @@ int main(int argc, const char * argv[]) {
                         
                         rObject[i].updateRT(*dest, *cost, *dest);
                         newRouter = false;
-                        
-                        cout << "Inside update if condition...\n";
                     }
-                    cout << "Inside for loop i = " << i << endl;
                 }
-                cout << "Outside for loop...\n";
-                
                 if (newRouter == true)
                 {
-                    cout << "Inside new router if statement...\n";
-                    
                     src = strtok(topologyLine, "\t");
                     dest = strtok(NULL, "\t");
                     cost = strtok(NULL, "\t");
@@ -82,38 +106,23 @@ int main(int argc, const char * argv[]) {
                     ++numOfRouters;
                 }
                 
-                cout<< "After if statement...\n";
-                
                 in_file.getline(topologyLine, maxLineLength);
-                
             }
-            cout << "Outside while loop...\n";
         }
         else {
             cout << "topology file did not open correctly.\n";
             cout << "Program terminated...\n";
-            return 0;
+            exit(EXIT_FAILURE);
         }
-        
     }
     else {
         cout << "Incorrect command line input!\nArgument 1 = topology file, Argument 2 = time\n";
         cout << "Program terminated...\n";
-        return 0;
+        exit(EXIT_FAILURE);
     }
     
     cout << "Before functions...\n";
-    
-    printRouterNamesArray(routerNames, numOfRouters);
-    
-    printAllRT(rObject);
-    
-    return 0;
-}
 
-void commandLineInterface(vector<router>&, int argc, const char * argv[])
-{
-    
 }
 
 void printRouterNamesArray(const short rNames[], const short numRouters)
