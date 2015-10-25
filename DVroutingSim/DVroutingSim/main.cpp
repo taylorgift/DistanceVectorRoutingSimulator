@@ -26,8 +26,8 @@ using namespace std;
  *  You can assume router names start from 0 -> n
  */
 
-void commandLineInterface(vector<router>&, int argc, const char * argv[], short& numOfRouters, short routerNames[], double& time);
-void printRouterNamesArray(const short rNames[], const short numRouters);
+void commandLineInterface(vector<router>&, int argc, const char * argv[], short& numOfRouters, string routerNames[], double& time);
+void printRouterNamesArray(const string rNames[], const short numRouters);
 void printAllRT(const vector<router>&);
 //Events
 void processDVPacket(vector<router>&, short numOfRouters, short routerNames[]);     //numOfRouters passed by val or ref???
@@ -37,7 +37,7 @@ int main(int argc, const char * argv[]) {
     vector<router> rObject;
     
     short numOfRouters = 0;
-    short routerNames[5] = {-1, -1, -1, -1, -1};                            //Hardcoded number of routers for topology1!!!
+    string routerNames[5] = {"-1", "-1", "-1", "-1", "-1"};                            //Hardcoded number of routers for topology1!!!
     double simulationTime = 0;
     double currentTime = 0;
     
@@ -54,7 +54,7 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 
-void commandLineInterface(vector<router>& rObject, int argc, const char * argv[], short& numOfRouters, short routerNames[], double& time)
+void commandLineInterface(vector<router>& rObject, int argc, const char * argv[], short& numOfRouters, string routerNames[], double& time)
 {
     short maxLineLength = 32;                                               //Hardcoded line length!!!
     char topologyLine[maxLineLength];
@@ -76,16 +76,19 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
             //scan file for number of router objects to make
             in_file.getline(topologyLine, maxLineLength);
             while (!in_file.eof()) {
+                
+                //Parse line into string tokens
+                src = strtok(topologyLine, "\t");
+                dest = strtok(NULL, "\t");
+                cost = strtok(NULL, "\t");
+                delay = strtok(NULL, "\t");
+                
                 newRouter = true;
                 for (int i = 0; i < 5; ++i)
                 {
-                    if (topologyLine[0] == routerNames[i]) {
-                        //If the first input number is a routerName...
+                    if (src == routerNames[i]) {
+                        //If the source number is a routerName...
                         //Give to object of correct name
-                        src = strtok(topologyLine, "\t");
-                        dest = strtok(NULL, "\t");
-                        cost = strtok(NULL, "\t");
-                        delay = strtok(NULL, "\t");
                         
                         rObject[i].updateRT(*dest, *cost, *dest);
                         newRouter = false;
@@ -93,16 +96,11 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
                 }
                 if (newRouter == true)
                 {
-                    src = strtok(topologyLine, "\t");
-                    dest = strtok(NULL, "\t");
-                    cost = strtok(NULL, "\t");
-                    delay = strtok(NULL, "\t");
-                    
                     //If it's a new router, create a new object
                     router r(*src, *dest, *cost, *delay);
                     rObject.push_back(r);
                     
-                    routerNames[numOfRouters] = *src;
+                    routerNames[numOfRouters] = src;
                     ++numOfRouters;
                 }
                 
@@ -125,7 +123,7 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
 
 }
 
-void printRouterNamesArray(const short rNames[], const short numRouters)
+void printRouterNamesArray(const string rNames[], const short numRouters)
 {
     cout << "Inside printArray function...\n";
     
