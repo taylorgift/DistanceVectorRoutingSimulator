@@ -12,7 +12,7 @@
 
 using namespace std;
 
-router::router(char& src, char& dest, char& cost, char& delay) : RTSize(0) {
+router::router(char& src, char& dest, char& cost, char& delay) : destination(), cost(), nextHop(), RTSize(0), maxRTSize(0) {
     cout << "CONSTRUCTOR Source: " << &src << endl;
     cout << "CONSTRUCTOR Destination: " << &dest << endl;
     cout << "CONSTRUCTOR Cost: " << &cost << endl;
@@ -40,10 +40,25 @@ void router::updateRT(char& newDest, char& newCost, char& newNextHop)
     cout << "updateRT newCost: " << &newCost << endl;
     cout << "updateRT newNextHop: " << &newNextHop << endl;
     
-    destination[RTSize] = &newDest;
-    cost[RTSize] = &newCost;
-    nextHop[RTSize] = &newNextHop;
-    ++RTSize;
+    //no allocation needed
+    if (RTSize < maxRTSize)
+    {
+        destination[RTSize] = &newDest;
+        cost[RTSize] = &newCost;
+        nextHop[RTSize] = &newNextHop;
+        ++RTSize;
+    }
+    //allocation needed
+    else
+    {
+        allocateRoutingTable();
+        
+        destination[RTSize] = &newDest;
+        cost[RTSize] = &newCost;
+        nextHop[RTSize] = &newNextHop;
+        ++RTSize;
+    }
+    
 }
 
 void router::printRT() const
@@ -63,7 +78,31 @@ void router::setLink(char linkData)
     
 }
 
-std::string router::getRouterName() const
+string router::getRouterName() const
 {
     return routerName;
 }
+
+void router::allocateRoutingTable()
+{
+    maxRTSize += 30;
+    
+    string *tempDest = new string[maxRTSize];
+    string *tempCost = new string[maxRTSize];
+    string *tempNextHop = new string[maxRTSize];
+    
+    for (int i = 0; i < RTSize; ++i) {
+        tempDest[i] = destination[i];
+        tempCost[i] = cost[i];
+        tempNextHop[i] = nextHop[i];
+    }
+    
+    delete [] destination;
+    delete [] cost;
+    delete [] nextHop;
+    
+    destination = tempDest;
+    cost = tempCost;
+    nextHop = tempNextHop;
+}
+

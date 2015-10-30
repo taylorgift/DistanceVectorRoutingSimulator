@@ -12,6 +12,8 @@
 #include <stdio.h>
 #include <string>
 
+using namespace std;
+
 class router
 {
 public:
@@ -20,7 +22,7 @@ public:
     void updateRT(char& dest, char& cost, char& nextHop);
     void printRT() const;
     void setLink(char linkData);
-    std::string getRouterName() const;
+    string getRouterName() const;
     //events
     void processDVPacket();
     void forwardDataPacket();
@@ -34,13 +36,15 @@ private:
     {
         
     };
-    //Routing table variables                                           How many slots should be reserved for routing table?
-    std::string destination[50];
-    std::string cost[50];
-    std::string nextHop[50];
+    //Routing table variables/functions                                           How many slots should be reserved for routing table?
+    string *destination;
+    string *cost;
+    string *nextHop;
     short RTSize;
+    short maxRTSize;
+    void allocateRoutingTable();
     //Router Attributes
-    std::string routerName;
+    string routerName;
     
     /*
      *  Neighbor information!!!
