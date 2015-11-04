@@ -12,21 +12,17 @@
 
 using namespace std;
 
-router::router(char& src, char& dest, char& cost, char& delay) : destination(), cost(), nextHop(), RTSize(0), maxRTSize(0) {
-    cout << "CONSTRUCTOR Source: " << &src << endl;
-    cout << "CONSTRUCTOR Destination: " << &dest << endl;
-    cout << "CONSTRUCTOR Cost: " << &cost << endl;
-    cout << "CONSTRUCTOR Delay: " << &delay << endl;
+router::router(char& src, char& dest, char& cost, char& delay) : destination(), cost(), nextHop(), RTSize(0), maxRTSize(0),
+                                                                neighborName(), neighborCost(), neighborDelay(), numOfNeighbors(0) {
     
     strcpy(srcRT, &src);
     strcpy(destRT, &dest);
     strcpy(costRT, &cost);
     strcpy(delayRT, &delay);
     
-    cout << "strcpy complete...\n";
-    
     routerName = srcRT;
     updateRT(*destRT, *costRT, *destRT);
+    updateNeighbor(*destRT, *costRT, *delayRT);
 }
 
 router::~router() {
@@ -35,11 +31,6 @@ router::~router() {
 
 void router::updateRT(char& newDest, char& newCost, char& newNextHop)
 {
-    cout << "MADE IT\n";
-    cout << "updateRT newDest: " << &newDest << endl;
-    cout << "updateRT newCost: " << &newCost << endl;
-    cout << "updateRT newNextHop: " << &newNextHop << endl;
-    
     //no allocation needed
     if (RTSize < maxRTSize)
     {
@@ -58,7 +49,6 @@ void router::updateRT(char& newDest, char& newCost, char& newNextHop)
         nextHop[RTSize] = &newNextHop;
         ++RTSize;
     }
-    
 }
 
 void router::printRT() const
@@ -73,14 +63,51 @@ void router::printRT() const
     cout << "\n\n";
 }
 
-void router::setLink(char linkData)
-{
-    
-}
-
 string router::getRouterName() const
 {
     return routerName;
+}
+
+void router::updateNeighbor(char& name, char& cost, char& delay)
+{
+    string sName = &name;
+    string sCost = &cost;
+    string sDelay = &delay;
+    
+    neighborName.push_back(sName);
+    neighborCost.push_back(sCost);
+    neighborDelay.push_back(sDelay);
+    ++numOfNeighbors;
+}
+
+void router::printNeighbors() const
+{
+    cout << "\t\t\t\t" << getRouterName() << "'s Neighbors\n";
+    cout << "Name\t\t\t\tCost\t\t\tDelay\n";
+    
+    for (int i = 0; i < numOfNeighbors; ++i)
+    {
+        cout << neighborName[i] << "\t\t\t\t" << neighborCost[i] << "\t\t\t" << neighborDelay[i] << "\n";
+    }
+    cout << "\n\n";
+}
+
+short router::getNumOfNeighbors()
+{
+    return numOfNeighbors;
+}
+
+string router::getNeighborName(int item)
+{
+    return neighborName[item];
+}
+
+router::DVPacket router::getDVPacket()
+{
+    DVPacket dvp;
+    dvp.dest = destination;
+    dvp.cost = cost;
+    return dvp;
 }
 
 void router::allocateRoutingTable()

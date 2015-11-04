@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		92042C781BD0A21C006FC549 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92042C771BD0A21C006FC549 /* main.cpp */; };
 		92042C801BD0A248006FC549 /* router.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92042C7E1BD0A248006FC549 /* router.cpp */; };
+		92FB53321BE336A1006AE2FF /* p_queue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 92FB53301BE336A1006AE2FF /* p_queue.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +29,8 @@
 		92042C771BD0A21C006FC549 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		92042C7E1BD0A248006FC549 /* router.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = router.cpp; sourceTree = "<group>"; };
 		92042C7F1BD0A248006FC549 /* router.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = router.h; sourceTree = "<group>"; };
+		92FB53301BE336A1006AE2FF /* p_queue.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = p_queue.cpp; sourceTree = "<group>"; };
+		92FB53311BE336A1006AE2FF /* p_queue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = p_queue.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +64,8 @@
 			isa = PBXGroup;
 			children = (
 				92042C771BD0A21C006FC549 /* main.cpp */,
+				92FB53301BE336A1006AE2FF /* p_queue.cpp */,
+				92FB53311BE336A1006AE2FF /* p_queue.h */,
 				92042C7E1BD0A248006FC549 /* router.cpp */,
 				92042C7F1BD0A248006FC549 /* router.h */,
 			);
@@ -125,6 +130,7 @@
 			files = (
 				92042C801BD0A248006FC549 /* router.cpp in Sources */,
 				92042C781BD0A21C006FC549 /* main.cpp in Sources */,
+				92FB53321BE336A1006AE2FF /* p_queue.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,6 +247,7 @@
 				92042C7D1BD0A21C006FC549 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

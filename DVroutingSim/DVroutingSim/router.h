@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -21,22 +22,24 @@ public:
     ~router();
     void updateRT(char& dest, char& cost, char& nextHop);
     void printRT() const;
-    void setLink(char linkData);
     string getRouterName() const;
-    //events
-    void processDVPacket();
-    void forwardDataPacket();
-    void sendDVPacket();
+    void updateNeighbor(char& name, char& cost, char& delay);
+    void printNeighbors() const;
+    //DV Packet
+    struct DVPacket
+    {
+        string *dest;
+        string *cost;
+    };
+    DVPacket getDVPacket();
+    //Pass neighbor information
+    short getNumOfNeighbors();
+    string getNeighborName(int item);
     
     
     
 private:
-    //Link struct
-    struct link
-    {
-        
-    };
-    //Routing table variables/functions                                           How many slots should be reserved for routing table?
+    //Routing table variables/functions
     string *destination;
     string *cost;
     string *nextHop;
@@ -49,6 +52,10 @@ private:
     /*
      *  Neighbor information!!!
      */
+    vector<string> neighborName;
+    vector<string> neighborCost;
+    vector<string> neighborDelay;
+    short numOfNeighbors;
     
     //Update Routing Table temps
     char srcRT[7];

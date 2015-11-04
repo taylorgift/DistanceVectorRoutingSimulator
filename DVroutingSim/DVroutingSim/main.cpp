@@ -11,6 +11,7 @@
 #include <vector>
 #include <cstring>
 #include "router.h"
+#include "p_queue.h"
 
 using namespace std;
 
@@ -26,37 +27,59 @@ using namespace std;
  *  You can assume router names start from 0 -> n
  */
 
+/*
+ *  !!!Event Types!!!
+ *  s = send DV Packet
+ *  f = forward DV Packet
+ *  p = process DV Packet
+ */
+
 void commandLineInterface(vector<router>&, int argc, const char * argv[], short& numOfRouters, short& maxRouters, string *& routerNames, double& time);
 void printRouterNamesArray(const string * rNames, const short numRouters);
 void printAllRT(const vector<router>&);
+void printAllNeighbors(const vector<router>&);
 void allocateRouterNames(string *& rNames, const short numOfRouters, short& maxRouters);
+int nameToIndex(const string name, vector<router>&, const short numRouters);
 //Events
+void initializeEventQueue(vector<router>&, const short numOfRouters, p_queue&);
+char getNextEvent(p_queue&);
+void sendDVPacket(vector<router>&, const short numOfRouters, p_queue &, double currentTime);
 void processDVPacket(vector<router>&, short numOfRouters, short routerNames[]);     //numOfRouters passed by val or ref???
 
 int main(int argc, const char * argv[]) {
     
+    p_queue queue;
     vector<router> rObject;
     
     short numOfRouters = 0;
     short maxRouters = 0;
     string *routerNames = NULL;
-    //string routerNames[5] = {"-1", "-1", "-1", "-1", "-1"};                            //Hardcoded number of routers for topology1!!!
     double simulationTime = 0;
     double currentTime = 0;
     
     allocateRouterNames(routerNames, numOfRouters, maxRouters);
-    
-    cout << "numOfRouters: " << numOfRouters << ", maxRouters: " << maxRouters << endl;
-    
-    cout << "Pre commandLineInterface, simulationTime = " << simulationTime << endl;
-    
     commandLineInterface(rObject, argc, argv, numOfRouters, maxRouters, routerNames, simulationTime);
-    
-    cout << "Post commandLineInterface, simulationTime = " << simulationTime << endl;
-    
-    cout << "routerNames[0-4]: " << routerNames[0] << routerNames[1] << routerNames[2] << routerNames[3] << routerNames[4] << endl;
+    initializeEventQueue(rObject, numOfRouters, queue);
+        
+    //fill priority queue with events
+    while (currentTime <= simulationTime)
+    {
+        //begin processing events
+        switch (queue.getCurrentType()) {
+            case 's': sendDVPacket(rObject, numOfRouters, queue, currentTime);
+                      break;
+            default: cout << "Event Type '" << queue.getCurrentType() << "' not recognized...\n";
+                     cout << "Terminating Program...\n";
+                     exit(EXIT_FAILURE);
+        }
+        
+        queue.del();
+        ++currentTime;
+    }
     
     printRouterNamesArray(routerNames, numOfRouters);
+    
+    queue.printQueue();
     
     printAllRT(rObject);
     
@@ -65,8 +88,6 @@ int main(int argc, const char * argv[]) {
 
 void commandLineInterface(vector<router>& rObject, int argc, const char * argv[], short& numOfRouters, short& maxRouters, string *& routerNames, double& time)
 {
-    cout << "CL INTERFACE\n";
-    
     short maxLineLength = 32;                                               //Hardcoded line length!!!
     char topologyLine[maxLineLength];
     char* src;
@@ -74,6 +95,7 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
     char* cost;
     char* delay;
     bool newRouter = true;
+    bool newDestRouter = true;
     
     //checking proper command line entries...
     if (argc == 3) {
@@ -94,15 +116,28 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
                 delay = strtok(NULL, "\t");
                 
                 newRouter = true;
+                newDestRouter = true;
                 for (int i = 0; i < numOfRouters; ++i)
                 {
                     if (src == routerNames[i]) {
                         //If the source number is a routerName...
                         //Give to object of correct name
-                        
                         rObject[i].updateRT(*dest, *cost, *dest);
+                        rObject[i].updateNeighbor(*dest, *cost, *delay);
                         newRouter = false;
                     }
+                    
+                    /*
+                     */
+                    if (dest == routerNames[i])
+                    {
+                        //If the destination number is a routerName...
+                        //Give to object of correct name
+                        rObject[i].updateRT(*src, *cost, *src);
+                        rObject[i].updateNeighbor(*src, *cost, *delay);
+                        newDestRouter = false;
+                    }
+                    
                 }
                 if (newRouter == true)
                 {
@@ -119,29 +154,34 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
                     //routerName allocation needed
                     else
                     {
-                        cout << "*** Before routerNames array allocation ***\n";
-                        cout << "Old Max Routers: " << maxRouters << endl;
-                        cout << "Old Router Allocation: { ";
-                        for (int i = 0; i < maxRouters; ++i) {
-                            cout << routerNames[i] << ", ";
-                        }
-                        cout << "}\n";
-                        
                         allocateRouterNames(routerNames, numOfRouters, maxRouters);
-                        
-
                         
                         routerNames[numOfRouters] = src;
                         ++numOfRouters;
+                    }
+                }
+                
+                /*
+                 */
+                if (newDestRouter == true)
+                {
+                    //If it's a new router, create a new object
+                    router r(*dest, *src, *cost, *delay);
+                    rObject.push_back(r);
+                    
+                    //routerName allocation not needed
+                    if (numOfRouters < maxRouters)
+                    {
+                        routerNames[numOfRouters] = dest;
+                        ++numOfRouters;
+                    }
+                    //routerName allocation needed
+                    else
+                    {
+                        allocateRouterNames(routerNames, numOfRouters, maxRouters);
                         
-                        cout << "*** After routerNames array allocation ***\n";
-                        cout << "MAX ROUTERS: " << maxRouters << endl;
-                        cout << "New Router Allocation: { ";
-                        for (int i = 0; i < maxRouters; ++i) {
-                            cout << routerNames[i] << ", ";
-                        }
-                        cout << "}\n";
-                        
+                        routerNames[numOfRouters] = dest;
+                        ++numOfRouters;
                     }
                 }
                 
@@ -163,8 +203,6 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
 
 void printRouterNamesArray(const string * rNames, const short numRouters)
 {
-    cout << "Inside printArray function...\n";
-    
     cout << "Total routers = " << numRouters << "\n";
     cout << "routerNames array: { ";
     for (int i = 0; i < numRouters; ++i) {
@@ -182,10 +220,17 @@ void printAllRT(const vector<router>& r)
     }
 }
 
+void printAllNeighbors(const vector<router>& r)
+{
+    unsigned long size = r.size();
+    
+    for (unsigned int i = 0; i < size; ++i) {
+        r[i].printNeighbors();
+    }
+}
+
 void allocateRouterNames(string *& rNames, const short numOfRouters, short& maxRouters)
 {
-    cout << "Inside allocateRouterNames function...\n";
-    
     maxRouters += 2;
     
     string *tempRouterArrayPointer = new string[maxRouters];
@@ -198,19 +243,51 @@ void allocateRouterNames(string *& rNames, const short numOfRouters, short& maxR
     
     rNames = tempRouterArrayPointer;
     
-    cout << "Newly allocated routerNames array: { ";
-    
-    for (int i = 0; i < numOfRouters; ++i) {
-        cout << rNames[i] << ", ";
-    }
-    
-    //Initialize new router slots
-    cout << "{new slots ->} ";
+    //Initialize new router slots to -1
     for (int j = numOfRouters; j < maxRouters; ++j) {
         rNames[j] = "-1";
-        cout << rNames[j] << ", ";
     }
-    cout << "}\n";
+}
+
+int nameToIndex(const string name, vector<router>& r, const short numRouters)
+{
+    for (int i = 0; i < numRouters; ++i) {
+        if (name == r[i].getRouterName())
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/*
+ *  EVENTS
+ */
+
+void initializeEventQueue(vector<router>& r, const short numOfRouters, p_queue& q)
+{
+    int index;
+    
+    for (int i = 0; i < numOfRouters; ++i) {
+        for (int j = 0; j < r[i].getNumOfNeighbors(); ++j) {
+            index = nameToIndex(r[i].getNeighborName(j), r, numOfRouters);
+            if (index == -1)
+            {
+                cout << "nameToIndex failed during event queue initialization...\nTerminating program.\n";
+                exit(EXIT_FAILURE);
+            }
+            q.insert(0, 's', r[i], r[index]);
+        }
+    }
+}
+
+void sendDVPacket(vector<router>& r, const short numOfRouters, p_queue & q, double currentTime)
+{
+    int srcIndex = nameToIndex(q.getCurrentSrcName(), r, numOfRouters);
+    int destIndex = nameToIndex(q.getCurrentDestName(), r, numOfRouters);
+    
+    cout << "Sending from " << r[srcIndex].getRouterName() << " to " << r[destIndex].getRouterName() << "\n";
+    
 }
 
 
