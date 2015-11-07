@@ -10,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <cstring>
+#include <string>
 #include "router.h"
 #include "p_queue.h"
 
@@ -42,9 +43,10 @@ void allocateRouterNames(string *& rNames, const short numOfRouters, short& maxR
 int nameToIndex(const string name, vector<router>&, const short numRouters);
 //Events
 void initializeEventQueue(vector<router>&, const short numOfRouters, p_queue&);
+void periodicUpdate(vector<router>&, short &numOfRouters, p_queue&, int currentTime);
 char getNextEvent(p_queue&);
-void sendDVPacket(vector<router>&, const short numOfRouters, p_queue &, double currentTime);
-void processDVPacket(vector<router>&, short numOfRouters, short routerNames[]);     //numOfRouters passed by val or ref???
+void sendDVPacket(vector<router>&, short& numOfRouters, p_queue &, double currentTime);
+void processDVPacket(vector<router>&, short numOfRouters, p_queue &, double& currentTime);
 
 int main(int argc, const char * argv[]) {
     
@@ -56,17 +58,48 @@ int main(int argc, const char * argv[]) {
     string *routerNames = NULL;
     double simulationTime = 0;
     double currentTime = 0;
+    int periodicSeconds = 1;
     
     allocateRouterNames(routerNames, numOfRouters, maxRouters);
     commandLineInterface(rObject, argc, argv, numOfRouters, maxRouters, routerNames, simulationTime);
     initializeEventQueue(rObject, numOfRouters, queue);
-        
+    
+    printAllRT(rObject);
+    queue.printQueue();
+    
     //fill priority queue with events
     while (currentTime <= simulationTime)
     {
+        printAllRT(rObject);
+        queue.printQueue();
+        
+        if (queue.isEmpty())
+        {
+            currentTime = periodicSeconds;
+        }
+        else
+        {
+            //Update current time
+            currentTime = queue.getCurrentTime();
+        }
+        
+        cout << "1.\n";
+        
+        //periodic update
+        if (currentTime >= periodicSeconds)
+        {
+            cout << "Periodic update!\n";
+            periodicUpdate(rObject, numOfRouters, queue, periodicSeconds);
+            ++periodicSeconds;
+        }
+        
+        cout << "2.\n";
+        
         //begin processing events
         switch (queue.getCurrentType()) {
             case 's': sendDVPacket(rObject, numOfRouters, queue, currentTime);
+                      break;
+            case 'p': processDVPacket(rObject, numOfRouters, queue, currentTime);
                       break;
             default: cout << "Event Type '" << queue.getCurrentType() << "' not recognized...\n";
                      cout << "Terminating Program...\n";
@@ -74,12 +107,13 @@ int main(int argc, const char * argv[]) {
         }
         
         queue.del();
-        ++currentTime;
     }
     
     printRouterNamesArray(routerNames, numOfRouters);
     
     queue.printQueue();
+    
+    queue.printDVPackets();
     
     printAllRT(rObject);
     
@@ -276,18 +310,97 @@ void initializeEventQueue(vector<router>& r, const short numOfRouters, p_queue& 
                 cout << "nameToIndex failed during event queue initialization...\nTerminating program.\n";
                 exit(EXIT_FAILURE);
             }
-            q.insert(0, 's', r[i], r[index]);
+            q.insert(0, 's', r[i], r[index], r[i].getDVDest(), r[i].getDVCost(), r[i].getRTSize());
         }
     }
 }
 
-void sendDVPacket(vector<router>& r, const short numOfRouters, p_queue & q, double currentTime)
+void periodicUpdate(vector<router>& r, short &numOfRouters, p_queue& q, int currentTime)
+{
+    int index;
+    
+    for (int i = 0; i < numOfRouters; ++i) {
+        for (int j = 0; j < r[i].getNumOfNeighbors(); ++j) {
+            index = nameToIndex(r[i].getNeighborName(j), r, numOfRouters);
+            if (index == -1)
+            {
+                cout << "nameToIndex failed during event queue initialization...\nTerminating program.\n";
+                exit(EXIT_FAILURE);
+            }
+            q.insert(currentTime, 's', r[i], r[index], r[i].getDVDest(), r[i].getDVCost(), r[i].getRTSize());
+        }
+    }
+}
+
+void sendDVPacket(vector<router>& r, short& numOfRouters, p_queue & q, double currentTime)
 {
     int srcIndex = nameToIndex(q.getCurrentSrcName(), r, numOfRouters);
     int destIndex = nameToIndex(q.getCurrentDestName(), r, numOfRouters);
+    double newTime;
+    
+    
     
     cout << "Sending from " << r[srcIndex].getRouterName() << " to " << r[destIndex].getRouterName() << "\n";
     
+    //Find delay value from src to dest
+    for (int i = 0; i < r[srcIndex].getNumOfNeighbors(); ++i) {
+        if (r[srcIndex].getNeighborName(i) == r[destIndex].getRouterName())
+        {
+            newTime = stod(r[srcIndex].getNeighborDelay(i)) + currentTime;
+            q.insert(newTime, 'p', r[srcIndex], r[destIndex], q.getCurrentDVDest(), q.getCurrentDVCost(), q.getCurrentDVSize());    //Last 2 parameters need to be passed by value?
+                                                                                                                                    //Otherwise values may be changed between this
+                                                                                                                                    //event and the event where the packet is
+                                                                                                                                    //processed.
+        }
+        else
+        {
+            /*
+             *   This can detect a router going down!!!!
+             */
+        }
+    }
+}
+
+void processDVPacket(vector<router>& r, short numOfRouters, p_queue & q, double& currentTime)
+{
+    int srcIndex = nameToIndex(q.getCurrentSrcName(), r, numOfRouters);
+    int destIndex = nameToIndex(q.getCurrentDestName(), r, numOfRouters);
+    int neighborIndex = -1;
+    
+    for (int i = 0; i < r[destIndex].getNumOfNeighbors(); ++i) {
+        if (r[srcIndex].getRouterName() == r[destIndex].getNeighborName(i))
+        {
+            neighborIndex = i;
+        }
+    }
+    
+    q.printQueue();
+    
+    if (r[destIndex].updateRTDV(q.getCurrentDVDest(), q.getCurrentDVCost(), q.getCurrentSrcName(), q.getCurrentDVSize(), r[destIndex].getNeighborCost(neighborIndex)))
+    {
+        //triggered update occurs
+        cout << "TRIGGERED UPDATE...\n";
+        for (int i = 0; i < r[destIndex].getNumOfNeighbors(); ++i) {
+            //split horizon
+            if (r[i].getRouterName() == r[srcIndex].getRouterName())
+            {
+                continue;
+            }
+            q.insert(currentTime, 's', r[destIndex], r[i], r[destIndex].getDVDest(), r[destIndex].getDVCost(), r[destIndex].getRTSize());
+        }
+    }
+    else
+    {
+        //nothing in the routing table was updated, no triggered update
+        cout << "NO TRIGGERED UPDATE...\n";
+    }
+    
+    //if changes in RT occur, triggered update
+    
+    //implement split horizon?
+    
+    
+    //Delete DV packet pointers
 }
 
 

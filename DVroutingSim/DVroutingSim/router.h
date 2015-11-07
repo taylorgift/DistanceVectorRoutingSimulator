@@ -22,19 +22,30 @@ public:
     ~router();
     void updateRT(char& dest, char& cost, char& nextHop);
     void printRT() const;
+    short getRTSize() const;
     string getRouterName() const;
     void updateNeighbor(char& name, char& cost, char& delay);
     void printNeighbors() const;
-    //DV Packet
-    struct DVPacket
-    {
-        string *dest;
-        string *cost;
-    };
-    DVPacket getDVPacket();
+    
+    //DV Packet implemented as parallel array
+    //these give new dest/cost arrays so that their data isn't overwritten by an event
+    string* getDVDest();
+    string* getDVCost();
+    bool updateRTDV(string* destDV, string* costDV, string nextHopDV, int dvSize, string nCost);
+    
+    
+//    //DV Packet implemented as struct
+//    struct DVPacket
+//    {
+//        string *dest;
+//        string *cost;
+//    };
+//    DVPacket getDVPacket();
     //Pass neighbor information
     short getNumOfNeighbors();
     string getNeighborName(int item);
+    string getNeighborCost(int item);
+    string getNeighborDelay(int item);
     
     
     

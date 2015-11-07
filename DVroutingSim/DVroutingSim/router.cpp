@@ -9,6 +9,7 @@
 #include "router.h"
 #include <iostream>
 #include <cstring>
+#include <string>
 
 using namespace std;
 
@@ -60,7 +61,12 @@ void router::printRT() const
     {
         cout << destination[i] << "\t\t\t\t" << cost[i] << "\t\t\t" << nextHop[i] << "\n";
     }
-    cout << "\n\n";
+    cout << "\n";
+}
+
+short router::getRTSize() const
+{
+    return RTSize;
 }
 
 string router::getRouterName() const
@@ -102,13 +108,127 @@ string router::getNeighborName(int item)
     return neighborName[item];
 }
 
-router::DVPacket router::getDVPacket()
+string router::getNeighborCost(int item)
 {
-    DVPacket dvp;
-    dvp.dest = destination;
-    dvp.cost = cost;
-    return dvp;
+    return neighborCost[item];
 }
+
+string router::getNeighborDelay(int item)
+{
+    return neighborDelay[item];
+}
+
+string* router::getDVDest()
+{
+    string* temp = new string[RTSize];
+    
+    for (int i = 0; i < RTSize; ++i) {
+        temp[i] = destination[i];
+    }
+    
+    return temp;
+}
+
+string* router::getDVCost()
+{
+    string* temp = new string[RTSize];
+    
+    for (int i = 0; i < RTSize; ++i) {
+        temp[i] = cost[i];
+    }
+    
+    return temp;
+}
+
+bool router::updateRTDV(string* destDV, string* costDV, string nextHopDV, int dvSize, string nCost)
+{    
+    bool newEntry = true;
+    bool triggeredUpdate = false;
+    int maxDV = sizeof(*destDV);
+    
+    cout << "sizeof(destDV): " << maxDV << endl;
+    
+    for (int i = 0; i < dvSize; ++i) {
+        cout << " YOU!\n";
+        
+        
+        newEntry = true;
+        for (int j = 0; j < RTSize; ++j) {
+            //if DV destination entry is the destination router, skip entry
+            if (destDV[i] == getRouterName())
+            {
+                cout << "DV destination is the current router... Skip this entry\n";
+                newEntry = false;
+                break;
+            }
+            if (destination[j] == destDV[i])
+            {
+                
+                
+                //convert costs to ints so they can determine if a shorter path was found
+                int costNum = stoi(cost[j]);
+                int costDVNum = stoi(costDV[i]);
+                int costDVSrcNum = stoi(nCost);
+                costDVNum += costDVSrcNum;
+                if (costNum > costDVNum)
+                {
+                    cout << "A shorter path has been found. Replace this Routing Table entry\n";
+                    cost[j] = to_string(costDVNum);
+                    nextHop[j] = nextHopDV;
+                    newEntry = false;
+                    triggeredUpdate = true;
+                    break;
+                }
+                else
+                {
+                    newEntry = false;
+                    break;
+                }
+            }
+        }
+        
+        cout << "In router: " << getRouterName() << " destDV[i]: " << destDV[i] << " costDV[i]: " << costDV[i] << " nextHopDV: " << nextHopDV << endl;
+        
+        if (newEntry)
+        {
+            triggeredUpdate = true;
+            int costDVN = stoi(costDV[i]);
+            int costTotal = stoi(nCost);
+            costTotal += costDVN;
+            
+            //no allocation needed
+            if (RTSize < maxRTSize)
+            {
+                destination[RTSize] = destDV[i];
+                cost[RTSize] = to_string(costTotal);
+                nextHop[RTSize] = nextHopDV;
+                ++RTSize;
+            }
+            //allocation needed
+            else
+            {
+                allocateRoutingTable();
+                
+                destination[RTSize] = destDV[i];
+                cost[RTSize] = to_string(costTotal);
+                nextHop[RTSize] = nextHopDV;
+                ++RTSize;
+            }
+        }
+        
+        cout << "FUCK";
+        
+    }
+    return triggeredUpdate;
+}
+
+//router::DVPacket router::getDVPacket()
+//{
+//    DVPacket dvp;
+//    dvp.dest = destination;
+//    dvp.cost = cost;
+//    return dvp;
+//}
 
 void router::allocateRoutingTable()
 {

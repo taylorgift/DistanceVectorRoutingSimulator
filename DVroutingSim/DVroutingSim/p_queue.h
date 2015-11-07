@@ -19,14 +19,19 @@ class p_queue
 public:
     p_queue();
     ~p_queue();
-    void insert(double time, char type, router& src, router& dest);
+    void insert(double time, char type, router& src, router& dest, string *dvDest, string *dvCost, int dvSize);
     void del();
     void printQueue();
+    void printDVPackets();
     void processEvent();
     double getCurrentTime();
     char getCurrentType();
+    string* getCurrentDVDest();
+    string* getCurrentDVCost();
+    int getCurrentDVSize();
     string getCurrentSrcName();
     string getCurrentDestName();
+    bool isEmpty();
     
 private:
     struct event
@@ -35,6 +40,9 @@ private:
         char type;
         router *src;
         router *dest;
+        string *dvDest;
+        string *dvCost;
+        int dvSize;
         event *link;
     };
     
