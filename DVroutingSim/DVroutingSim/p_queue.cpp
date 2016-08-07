@@ -140,7 +140,7 @@ string p_queue::getCurrentDestName()
 
 bool p_queue::isEmpty()
 {
-    if (front->link == NULL)
+    if (front == NULL)
         return true;
     else
         return false;

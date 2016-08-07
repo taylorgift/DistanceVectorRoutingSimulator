@@ -35,7 +35,7 @@ using namespace std;
  *  p = process DV Packet
  */
 
-void commandLineInterface(vector<router>&, int argc, const char * argv[], short& numOfRouters, short& maxRouters, string *& routerNames, double& time);
+void commandLineInterface(vector<router>&, int argc, const char * argv[], short& numOfRouters, short& maxRouters, string *& routerNames, double& time, int& forwardDataScenario);
 void printRouterNamesArray(const string * rNames, const short numRouters);
 void printAllRT(const vector<router>&);
 void printAllNeighbors(const vector<router>&);
@@ -47,6 +47,7 @@ void periodicUpdate(vector<router>&, short &numOfRouters, p_queue&, int currentT
 char getNextEvent(p_queue&);
 void sendDVPacket(vector<router>&, short& numOfRouters, p_queue &, double currentTime);
 void processDVPacket(vector<router>&, short numOfRouters, p_queue &, double& currentTime);
+void forwardDataPacket(vector<router>& r, short numOfRouters, p_queue & q, double currentTime);
 
 int main(int argc, const char * argv[]) {
     
@@ -59,22 +60,49 @@ int main(int argc, const char * argv[]) {
     double simulationTime = 0;
     double currentTime = 0;
     int periodicSeconds = 1;
+    bool networkConvergence = false;
+    double convergenceTime = 0;
+    string lastNode;
+    string lastConvergingNode;
+    int routingMessagesCount = 0;
+    int finalRoutingMessagesCount = 0;
+    int forwardDataScenario = 0;
     
     allocateRouterNames(routerNames, numOfRouters, maxRouters);
-    commandLineInterface(rObject, argc, argv, numOfRouters, maxRouters, routerNames, simulationTime);
+    commandLineInterface(rObject, argc, argv, numOfRouters, maxRouters, routerNames, simulationTime, forwardDataScenario);
     initializeEventQueue(rObject, numOfRouters, queue);
-    
-    printAllRT(rObject);
-    queue.printQueue();
     
     //fill priority queue with events
     while (currentTime <= simulationTime)
     {
-        printAllRT(rObject);
-        queue.printQueue();
-        
         if (queue.isEmpty())
         {
+            if (networkConvergence == false)
+            {
+                //Place Data Packet forwarding events after convergence (so convergence can be detected correctly)
+                int s = nameToIndex("0", rObject, numOfRouters);
+                if (forwardDataScenario == 1 && simulationTime > 10)
+                {
+                    int d = nameToIndex("3", rObject, numOfRouters);
+                    queue.insert(10, 'f', rObject[s], rObject[d], NULL, NULL, 0);
+                }
+                else if (forwardDataScenario == 2 && simulationTime > 20)
+                {
+                    int d = nameToIndex("7", rObject, numOfRouters);
+                    queue.insert(20, 'f', rObject[s], rObject[d], NULL, NULL, 0);
+                }
+                else if (forwardDataScenario == 3 && simulationTime > 30)
+                {
+                    int d = nameToIndex("23", rObject, numOfRouters);
+                    queue.insert(30, 'f', rObject[s], rObject[d], NULL, NULL, 0);
+                }
+                
+                convergenceTime = currentTime;
+                lastConvergingNode = lastNode;
+                finalRoutingMessagesCount = routingMessagesCount;
+                networkConvergence = true;
+            }
+            
             currentTime = periodicSeconds;
         }
         else
@@ -83,46 +111,43 @@ int main(int argc, const char * argv[]) {
             currentTime = queue.getCurrentTime();
         }
         
-        cout << "1.\n";
-        
         //periodic update
         if (currentTime >= periodicSeconds)
         {
-            cout << "Periodic update!\n";
             periodicUpdate(rObject, numOfRouters, queue, periodicSeconds);
             ++periodicSeconds;
         }
         
-        cout << "2.\n";
-        
         //begin processing events
         switch (queue.getCurrentType()) {
             case 's': sendDVPacket(rObject, numOfRouters, queue, currentTime);
+                      ++routingMessagesCount;
                       break;
             case 'p': processDVPacket(rObject, numOfRouters, queue, currentTime);
+                      ++routingMessagesCount;
+                      break;
+            case 'f': forwardDataPacket(rObject, numOfRouters, queue, currentTime);
                       break;
             default: cout << "Event Type '" << queue.getCurrentType() << "' not recognized...\n";
                      cout << "Terminating Program...\n";
                      exit(EXIT_FAILURE);
         }
-        
+        lastNode = queue.getCurrentDestName();
         queue.del();
     }
     
-    printRouterNamesArray(routerNames, numOfRouters);
-    
-    queue.printQueue();
-    
-    queue.printDVPackets();
-    
     printAllRT(rObject);
+    
+    cout << "Network converged at time " << convergenceTime << endl;
+    cout << "Last Node to converge was " << lastConvergingNode << endl;
+    cout << "Total routing-control messages = " << finalRoutingMessagesCount << endl;
     
     return 0;
 }
 
-void commandLineInterface(vector<router>& rObject, int argc, const char * argv[], short& numOfRouters, short& maxRouters, string *& routerNames, double& time)
+void commandLineInterface(vector<router>& rObject, int argc, const char * argv[], short& numOfRouters, short& maxRouters, string *& routerNames, double& time, int& forwardDataScenario)
 {
-    short maxLineLength = 32;                                               //Hardcoded line length!!!
+    short maxLineLength = 100;
     char topologyLine[maxLineLength];
     char* src;
     char* dest;
@@ -140,9 +165,25 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
         in_file.open(argv[1]);
         
         if (in_file.is_open()) {
+            
+            //set data packet forwarding scenario
+            if (!strcmp(argv[1], "topology1.txt"))
+            {
+                forwardDataScenario = 1;
+            }
+            else if (!strcmp(argv[1], "topology2.txt"))
+            {
+                forwardDataScenario = 2;
+            }
+            else if (!strcmp(argv[1], "topology3.txt"))
+            {
+                forwardDataScenario = 3;
+            }
+            
             //scan file for number of router objects to make
             in_file.getline(topologyLine, maxLineLength);
             while (!in_file.eof()) {
+
                 //Parse line into string tokens
                 src = strtok(topologyLine, "\t");
                 dest = strtok(NULL, "\t");
@@ -227,9 +268,10 @@ void commandLineInterface(vector<router>& rObject, int argc, const char * argv[]
             cout << "Program terminated...\n";
             exit(EXIT_FAILURE);
         }
+        in_file.close();
     }
     else {
-        cout << "Incorrect command line input!\nArgument 1 = topology file, Argument 2 = time\n";
+        cout << "Incorrect command line input!\nArgument 0 = program, Argument 1 = topology file, Argument 2 = time\n";
         cout << "Program terminated...\n";
         exit(EXIT_FAILURE);
     }
@@ -338,10 +380,6 @@ void sendDVPacket(vector<router>& r, short& numOfRouters, p_queue & q, double cu
     int destIndex = nameToIndex(q.getCurrentDestName(), r, numOfRouters);
     double newTime;
     
-    
-    
-    cout << "Sending from " << r[srcIndex].getRouterName() << " to " << r[destIndex].getRouterName() << "\n";
-    
     //Find delay value from src to dest
     for (int i = 0; i < r[srcIndex].getNumOfNeighbors(); ++i) {
         if (r[srcIndex].getNeighborName(i) == r[destIndex].getRouterName())
@@ -351,6 +389,7 @@ void sendDVPacket(vector<router>& r, short& numOfRouters, p_queue & q, double cu
                                                                                                                                     //Otherwise values may be changed between this
                                                                                                                                     //event and the event where the packet is
                                                                                                                                     //processed.
+            return;
         }
         else
         {
@@ -374,12 +413,9 @@ void processDVPacket(vector<router>& r, short numOfRouters, p_queue & q, double&
         }
     }
     
-    q.printQueue();
-    
     if (r[destIndex].updateRTDV(q.getCurrentDVDest(), q.getCurrentDVCost(), q.getCurrentSrcName(), q.getCurrentDVSize(), r[destIndex].getNeighborCost(neighborIndex)))
     {
         //triggered update occurs
-        cout << "TRIGGERED UPDATE...\n";
         for (int i = 0; i < r[destIndex].getNumOfNeighbors(); ++i) {
             //split horizon
             if (r[i].getRouterName() == r[srcIndex].getRouterName())
@@ -392,16 +428,44 @@ void processDVPacket(vector<router>& r, short numOfRouters, p_queue & q, double&
     else
     {
         //nothing in the routing table was updated, no triggered update
-        cout << "NO TRIGGERED UPDATE...\n";
     }
-    
-    //if changes in RT occur, triggered update
-    
-    //implement split horizon?
-    
     
     //Delete DV packet pointers
 }
 
-
+void forwardDataPacket(vector<router>& r, short numOfRouters, p_queue & q, double currentTime)
+{
+    int srcIndex = nameToIndex(q.getCurrentSrcName(), r, numOfRouters);
+    int destIndex = nameToIndex(q.getCurrentDestName(), r, numOfRouters);
+    double newTime;
+    int newSrcIndex;
+    
+    if (srcIndex == destIndex)
+    {
+        cout << "Data Packet has arrived at node " << r[destIndex].getRouterName() << ".\n";
+        cout << "It arrived at time " << currentTime << endl;
+        return;
+    }
+    
+    for (int i = 0; i < r[srcIndex].getRTSize(); ++i) {
+        if (r[srcIndex].getRTDest(i) == r[destIndex].getRouterName())
+        {
+            //Data Packet tracing
+            cout << "Forwarding Data Packet from " << r[srcIndex].getRouterName() << " to " << r[srcIndex].getRTNextHop(i) << " at time " << currentTime << endl;
+            cout << "Data Packet's final destination is " << r[destIndex].getRouterName() << endl;
+            
+            //Find new time to insert next forwarding event
+            for (int j = 0; j < r[srcIndex].getNumOfNeighbors(); ++j) {
+                if (r[srcIndex].getNeighborName(j) == r[srcIndex].getRTNextHop(i))
+                {
+                    newTime = stod(r[srcIndex].getNeighborDelay(j)) + currentTime;
+                    newSrcIndex = nameToIndex(r[srcIndex].getNeighborName(j), r, numOfRouters);
+                    q.insert(newTime, 'f', r[newSrcIndex], r[destIndex], NULL, NULL, 0);
+                    return;
+                }
+            }
+        }
+    }
+    
+}
 

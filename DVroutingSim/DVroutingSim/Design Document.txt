@@ -1,0 +1,30 @@
+Taylor Gift
+11.6.2015
+Design Document
+
+!!! MAKE SURE TOPOLOGY FILE HAS AT MOST 1 NEWLINE CHARACTER AT THE END !!!
+!!! SEGMENTATION FAULT WILL OCCUR IF MORE THAN 1 NEWLINE CHARACTER IS PRESENT !!!
+
+Command line compilation: make
+Command line execution: ./a topology1.txt 20
+
+	My distance vector routing simulator relied on parallel arrays. Routing table entries (destination, cost, next hop), neighbor attributes (neighbor name, neighbor cost, neighbor delay), and DV packets (destination, cost) were all made up of arrays in which the indices correlated to one another. The priority (event) queue is made up of the time the event takes place, the event type to be called at that time, the source and destination routers, a pointer to the DV packet destination array, a pointer to the DV packet cost array, and the size of the DV packet arrays.
+
+	There are only 3 events that the simulator calls. One to send a DV packet to a neighbor, another to process a DV packet that was received, and an event to forward data packets to a destination. Sending a DV packet and forwarding a data packet used very similar functions. The only main difference being that sending a DV packet only required one hop every time. Forwarding a data packet required setting up multiple hops.
+
+Useful functions for observing network activity:
+
+printRouterNamesArray(routerNames, numOfRouters);
+	- Prints an array of all routers in the network.
+
+queue.printQueue();
+	- Prints a table of all events currently in the priority queue
+
+queue.printDVPackets();
+	- Prints a table of all individual event attributes currently in the queue
+
+printAllRT(rObject);
+	- Prints all router’s routing tables
+
+printAllNeighbors(rObject);
+	- Prints a table of all router’s neighbors

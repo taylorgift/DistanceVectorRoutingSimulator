@@ -24,6 +24,8 @@ public:
     void printRT() const;
     short getRTSize() const;
     string getRouterName() const;
+    string getRTDest(int item);
+    string getRTNextHop(int item);
     void updateNeighbor(char& name, char& cost, char& delay);
     void printNeighbors() const;
     

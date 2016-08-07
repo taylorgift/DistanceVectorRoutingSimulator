@@ -74,6 +74,16 @@ string router::getRouterName() const
     return routerName;
 }
 
+string router::getRTDest(int item)
+{
+    return destination[item];
+}
+
+string router::getRTNextHop(int item)
+{
+    return nextHop[item];
+}
+
 void router::updateNeighbor(char& name, char& cost, char& delay)
 {
     string sName = &name;
@@ -144,20 +154,13 @@ bool router::updateRTDV(string* destDV, string* costDV, string nextHopDV, int dv
 {    
     bool newEntry = true;
     bool triggeredUpdate = false;
-    int maxDV = sizeof(*destDV);
-    
-    cout << "sizeof(destDV): " << maxDV << endl;
     
     for (int i = 0; i < dvSize; ++i) {
-        cout << " YOU!\n";
-        
-        
         newEntry = true;
         for (int j = 0; j < RTSize; ++j) {
             //if DV destination entry is the destination router, skip entry
             if (destDV[i] == getRouterName())
             {
-                cout << "DV destination is the current router... Skip this entry\n";
                 newEntry = false;
                 break;
             }
@@ -172,7 +175,6 @@ bool router::updateRTDV(string* destDV, string* costDV, string nextHopDV, int dv
                 costDVNum += costDVSrcNum;
                 if (costNum > costDVNum)
                 {
-                    cout << "A shorter path has been found. Replace this Routing Table entry\n";
                     cost[j] = to_string(costDVNum);
                     nextHop[j] = nextHopDV;
                     newEntry = false;
@@ -186,8 +188,6 @@ bool router::updateRTDV(string* destDV, string* costDV, string nextHopDV, int dv
                 }
             }
         }
-        
-        cout << "In router: " << getRouterName() << " destDV[i]: " << destDV[i] << " costDV[i]: " << costDV[i] << " nextHopDV: " << nextHopDV << endl;
         
         if (newEntry)
         {
@@ -215,9 +215,6 @@ bool router::updateRTDV(string* destDV, string* costDV, string nextHopDV, int dv
                 ++RTSize;
             }
         }
-        
-        cout << "FUCK";
-        
     }
     return triggeredUpdate;
 }
